@@ -446,6 +446,9 @@ final class ImporterController extends MainController
                 }
                 $mapFields = [];
                 foreach ($ttAddressFields as $map) {
+                    if(!isset($GLOBALS['TCA']['tt_address']['columns'][$map]['label'])){
+                        $GLOBALS['TCA']['tt_address']['columns'][$map]['label'] = ''; // quick-dirty fix!
+                    }
                     $mapFields[] = [
                         $map,
                         str_replace(':', '', $this->languageService->sL($GLOBALS['TCA']['tt_address']['columns'][$map]['label'])),
@@ -731,7 +734,7 @@ final class ImporterController extends MainController
                     if (count($foundUser) == 1) {
                         $data['tt_address'][$userID[$foundUser[0]]] =  $dataArray;
                         $data['tt_address'][$userID[$foundUser[0]]]['pid'] = $this->indata['storage'];
-                        if ($this->indata['all_html']) {
+                        if (isset($this->indata['all_html'])) {
                             $data['tt_address'][$userID[$foundUser[0]]]['module_sys_dmail_html'] = $this->indata['all_html'];
                         }
                         if (is_array($this->indata['cat'] ?? false) && !in_array('cats', $this->indata['map'])) {
@@ -824,7 +827,7 @@ final class ImporterController extends MainController
     {
         $data['tt_address'][$id] = $dataArray;
         $data['tt_address'][$id]['pid'] = $this->indata['storage'];
-        if ($this->indata['all_html']) {
+        if (isset($this->indata['all_html'])) {
             $data['tt_address'][$id]['module_sys_dmail_html'] = $this->indata['all_html'];
         }
         if (is_array($this->indata['cat'] ?? false) && !in_array('cats', $this->indata['map'])) {
