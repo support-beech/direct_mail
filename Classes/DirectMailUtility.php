@@ -96,6 +96,8 @@ class DirectMailUtility
     ): string {
         $typolinkPageUrl = 't3://page?uid=';
         $cObj = GeneralUtility::makeInstance(ContentObjectRenderer::class);
+        $request = $GLOBALS['TYPO3_REQUEST'] ?? \TYPO3\CMS\Core\Http\ServerRequestFactory::fromGlobals();
+        $cObj->setRequest($request);
 
         return $cObj->typolink_URL([
             'parameter' => $typolinkPageUrl . $parameter,
@@ -301,9 +303,9 @@ class DirectMailUtility
     public static function getFullUrlsForDirectMailRecord(array $row): array
     {
         // Finding the domain to use
-        if (!$_SERVER['HTTP_HOST']) {
+        if (!isset($_SERVER['HTTP_HOST']) || !$_SERVER['HTTP_HOST']) {
             // In CLI / Scheduler context, $_SERVER['HTTP_HOST'] can be null
-            $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
+            $siteFinder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Site\SiteFinder::class);
             $site = $siteFinder->getSiteByPageId((int)$row['page']);
             $_SERVER['HTTP_HOST'] = $site->getBase()->getHost();
         }
