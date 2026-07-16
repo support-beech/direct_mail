@@ -44,6 +44,32 @@ class FetchUtility
             $context = ['verify' => Typo3ConfVarsUtility::getDMConfigSSLVerify()];
         }
 
+        // Handle Docker container local networking in CLI/Development
+        if (Environment::isCli() && $applicationContext->isDevelopment()) {
+            $urlParts = parse_url($url);
+            $host = $urlParts['host'] ?? '';
+
+            if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+                // Route to the 'apache' service container
+                $urlParts['host'] = 'apache';
+
+                // Reconstruct the URL
+                $scheme = isset($urlParts['scheme']) ? $urlParts['scheme'] . '://' : '';
+                $hostStr = $urlParts['host'];
+                $port = isset($urlParts['port']) ? ':' . $urlParts['port'] : '';
+                $path = $urlParts['path'] ?? '';
+                $query = isset($urlParts['query']) ? '?' . $urlParts['query'] : '';
+                $fragment = isset($urlParts['fragment']) ? '#' . $urlParts['fragment'] : '';
+
+                $url = $scheme . $hostStr . $port . $path . $query . $fragment;
+
+                if (!isset($context['headers'])) {
+                    $context['headers'] = [];
+                }
+                $context['headers']['Host'] = $host;
+            }
+        }
+
         return GeneralUtility::makeInstance(RequestFactory::class)->request($url, 'GET', $context);
     }
 

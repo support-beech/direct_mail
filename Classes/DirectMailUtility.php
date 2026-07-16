@@ -96,8 +96,6 @@ class DirectMailUtility
     ): string {
         $typolinkPageUrl = 't3://page?uid=';
         $cObj = GeneralUtility::makeInstance(ContentObjectRenderer::class);
-        $request = $GLOBALS['TYPO3_REQUEST'] ?? \TYPO3\CMS\Core\Http\ServerRequestFactory::fromGlobals();
-        $cObj->setRequest($request);
 
         return $cObj->typolink_URL([
             'parameter' => $typolinkPageUrl . $parameter,
@@ -302,13 +300,31 @@ class DirectMailUtility
      */
     public static function getFullUrlsForDirectMailRecord(array $row): array
     {
+        $siteFinder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Site\SiteFinder::class);
+        $site = $siteFinder->getSiteByPageId((int)$row['page']);
+
         // Finding the domain to use
-        if (!isset($_SERVER['HTTP_HOST']) || !$_SERVER['HTTP_HOST']) {
+        if (empty($_SERVER['HTTP_HOST'])) {
             // In CLI / Scheduler context, $_SERVER['HTTP_HOST'] can be null
-            $siteFinder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Site\SiteFinder::class);
-            $site = $siteFinder->getSiteByPageId((int)$row['page']);
             $_SERVER['HTTP_HOST'] = $site->getBase()->getHost();
         }
+
+        if (empty($GLOBALS['TYPO3_REQUEST'])) {
+            $request = new \TYPO3\CMS\Core\Http\ServerRequest();
+            $request = $request->withAttribute('site', $site);
+            $request = $request->withAttribute('applicationType', \TYPO3\CMS\Core\Core\SystemEnvironmentBuilder::REQUESTTYPE_FE);
+            $GLOBALS['TYPO3_REQUEST'] = $request;
+        } else {
+            $request = $GLOBALS['TYPO3_REQUEST'];
+            if (!$request->getAttribute('site')) {
+                $request = $request->withAttribute('site', $site);
+            }
+            if (!$request->getAttribute('applicationType')) {
+                $request = $request->withAttribute('applicationType', \TYPO3\CMS\Core\Core\SystemEnvironmentBuilder::REQUESTTYPE_FE);
+            }
+            $GLOBALS['TYPO3_REQUEST'] = $request;
+        }
+
         $result = [
             'baseUrl' => self::getTypolinkURL((int)$row['page']),
             'htmlUrl' => '',
